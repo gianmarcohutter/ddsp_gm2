@@ -30,7 +30,7 @@ setuptools.setup(
     description='Differentiable Digital Signal Processing ',
     author='Google Inc.',
     author_email='no-reply@google.com',
-    url='https://giantest:gitguenselat6321@github.com/giantest/ddsp_gm2/',
+    url='http://github.com/magenta/ddsp',
     license='Apache 2.0',
     packages=setuptools.find_packages(),
     package_data={
