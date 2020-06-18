@@ -30,6 +30,8 @@ import tensorflow.compat.v2 as tf
 
 Number = TypeVar('Number', int, float, np.ndarray, tf.Tensor)
 
+def deleteme():
+  print("hello")
 
 # Utility Functions ------------------------------------------------------------
 def tf_float32(x):
