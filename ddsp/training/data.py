@@ -21,9 +21,7 @@ import tensorflow.compat.v2 as tf
 import tensorflow_datasets as tfds
 
 _AUTOTUNE = tf.data.experimental.AUTOTUNE
-
-def deleteme():
-  print("hello")
+_AUTOTUNE2 = 5
 
 
 # ---------- Base Class --------------------------------------------------------
