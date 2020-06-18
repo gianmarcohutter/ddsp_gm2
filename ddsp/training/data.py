@@ -22,6 +22,9 @@ import tensorflow_datasets as tfds
 
 _AUTOTUNE = tf.data.experimental.AUTOTUNE
 
+def deleteme():
+  print("hello")
+
 
 # ---------- Base Class --------------------------------------------------------
 class DataProvider(object):
