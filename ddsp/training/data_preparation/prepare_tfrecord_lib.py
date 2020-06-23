@@ -85,7 +85,7 @@ def _add_f0_estimate(ex, sample_rate, frame_rate):
   return ex
 
 def add_phoneme(ex, sample_rate, frame_rate):
-	'''
+	
 	beam.metrics.Metrics.counter('prepare-tfrecord', 'get-phoneme').inc()
 	ex = dict(ex)
 	ex['phoneme'] = [len(ex['audio']),2,3,4]
@@ -96,6 +96,7 @@ def add_phoneme(ex, sample_rate, frame_rate):
 	                                               frame_rate, 2048)
 	ex = dict(ex)
 	ex['phoneme'] = mean_loudness_db.astype(np.float32)
+	'''
 	return ex
 
 
