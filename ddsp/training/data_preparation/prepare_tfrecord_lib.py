@@ -95,7 +95,7 @@ def add_phoneme(ex, sample_rate, frame_rate):
 	mean_loudness_db = spectral_ops.compute_loudness(audio, sample_rate,
 	                                               frame_rate, 2048)
 	ex = dict(ex)
-	ex['loudness_db'] = mean_loudness_db.astype(np.float32)
+	ex['phoneme'] = mean_loudness_db.astype(np.float32)
 	return ex
 
 
