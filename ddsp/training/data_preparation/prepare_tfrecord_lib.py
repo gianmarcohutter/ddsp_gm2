@@ -85,15 +85,15 @@ def _add_f0_estimate(ex, sample_rate, frame_rate):
   return ex
 
 def add_phoneme(ex, sample_rate, frame_rate):
-	
 	beam.metrics.Metrics.counter('prepare-tfrecord', 'get-phoneme').inc()
+	audio = ex['audio']
 	ex = dict(ex)
-	ex['phoneme'] = [len(ex['audio']),2,3,4]
+	ex['phoneme'] = spectral_ops.compute_f0(audio, sample_rate, frame_rate)
 	'''
 	beam.metrics.Metrics.counter('prepare-tfrecord', 'get-phoneme').inc()
 	audio = ex['audio']
 	mean_loudness_db = spectral_ops.compute_loudness(audio, sample_rate,
-	                                               frame_rate, 2048)
+						       frame_rate, 2048)
 	ex = dict(ex)
 	ex['phoneme'] = mean_loudness_db.astype(np.float32)
 	'''
