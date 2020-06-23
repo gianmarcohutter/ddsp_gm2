@@ -78,7 +78,7 @@ class DefaultPreprocessor(Preprocessor):
     return features
 
 
-@gin.regitster
+@gin.register
 class PhonemePreprocessor(Preprocessor):
 	def __init__(self,time_steps=1000):
 		super().__init__()
