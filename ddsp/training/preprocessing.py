@@ -88,7 +88,7 @@ class PhonemePreprocessor(Preprocessor):
 		features = super().__call__(features,training)
 		return self._default_processing(features)
 
-	def _phoneme_processing(self, features):
+	def _default_processing(self, features):
 		"""Always resample to `time_steps` and scale 'loudness_db' and 'f0_hz'."""
 		for k in ['loudness_db', 'f0_hz']:
 			features[k] = at_least_3d(features[k])
