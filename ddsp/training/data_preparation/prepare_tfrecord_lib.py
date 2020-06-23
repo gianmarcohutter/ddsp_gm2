@@ -84,6 +84,10 @@ def _add_f0_estimate(ex, sample_rate, frame_rate):
   })
   return ex
 
+def add_phoneme(ex, sample_rate, frame_rate):
+	ex['phoneme'] = len(ex['audio'])
+	return ex
+
 
 def split_example(
     ex, sample_rate, frame_rate, window_secs, hop_secs):
@@ -164,7 +168,8 @@ def prepare_tfrecord(
       examples = (
           examples
           | beam.Map(_add_f0_estimate, sample_rate, frame_rate)
-          | beam.Map(add_loudness, sample_rate, frame_rate))
+          | beam.Map(add_loudness, sample_rate, frame_rate)
+          | beam.Map(add_phoneme, sample_rate, frame_rate))
 
     if window_secs:
       examples |= beam.FlatMap(
