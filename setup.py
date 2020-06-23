@@ -28,7 +28,7 @@ setuptools.setup(
     name='ddsp',
     version=__version__,
     description='Differentiable Digital Signal Processing ',
-    author='Google Inc.',
+    author='Google Inc. adapted by Gian-Marco Hutter',
     author_email='no-reply@google.com',
     url='http://github.com/magenta/ddsp',
     license='Apache 2.0',
