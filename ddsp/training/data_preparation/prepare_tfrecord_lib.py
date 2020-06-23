@@ -123,7 +123,7 @@ def split_example(
         'audio': audio,
         'loudness_db': loudness_db,
         'f0_hz': f0_hz,
-        'f0_confidence': f0_confidence
+        'f0_confidence': f0_confidence,
         'phoneme':phoneme
     }
 
