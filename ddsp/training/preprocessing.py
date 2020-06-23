@@ -97,6 +97,7 @@ class PhonemePreprocessor(Preprocessor):
 		# Log-scale f0 features. Loudness from [-1, 0] to [1, 0].
 		features['f0_scaled'] = hz_to_midi(features['f0_hz']) / F0_RANGE
 		features['ld_scaled'] = (features['loudness_db'] / LD_RANGE) + 1.0
+		return features
 
 
 
