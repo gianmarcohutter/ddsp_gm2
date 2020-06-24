@@ -246,6 +246,15 @@ def compute_loudness(audio,
       loudness, expected_len, -range_db, use_tf=use_tf)
   return loudness
 
+@gin.register
+def compute_phoneme(audio,sample_rate,frame_rate):
+  # Compute expected length of phoneme vector
+  n_secs = audio.shape[-1] / float(sample_rate)  # `n_secs` can have milliseconds
+  expected_len = int(n_secs * frame_rate)
+  #create another dummy vector 
+  phoneme = np.zeros(expected_len)
+  return phoneme
+
 
 @gin.register
 def compute_f0(audio, sample_rate, frame_rate, viterbi=True):
