@@ -252,8 +252,7 @@ def compute_phoneme(audio,sample_rate,frame_rate):
   n_secs = audio.shape[-1] / float(sample_rate)  # `n_secs` can have milliseconds
   expected_len = int(n_secs * frame_rate)
   #create another dummy vector 
-  phoneme = np.zeros(expected_len)
-  phoneme[0]= n_secs
+  phoneme = np.full(expected_len,n_secs)
   return phoneme
 
 
