@@ -251,9 +251,69 @@ def compute_phoneme(audio,sample_rate,frame_rate):
   # Compute expected length of phoneme vector
   n_secs = audio.shape[-1] / float(sample_rate)  # `n_secs` can have milliseconds
   expected_len = int(n_secs * frame_rate)
-  #create another dummy vector 
-  phoneme = np.full(expected_len,sample_rate)
-  return phoneme
+
+  if (frame_rate!= 250):
+    raise Exception("phonemes are not implemented for frame rate other than 250hz")
+  
+  MODELDIR = os.path.join(os.path.dirname(pocketsphinx.__file__), 'model')
+  config = pocketsphinx.Decoder.default_config()
+
+  config.set_string('-hmm', os.path.join(MODELDIR, 'en-us'))
+  config.set_string('-allphone', os.path.join(MODELDIR, ' phonetic.lm'))
+  config.set_string('-lm', os.path.join(MODELDIR, 'en-us-phone.lm.bin'))
+  config.set_boolean('-remove_silence', False)# these two lines are added to get correct timing but supposedly they make the prediction worse
+  config.set_boolean('-remove_noise', False)#
+
+  decoder.start_utt()
+  stream = open(filename, 'rb')
+  while True:
+      buf = stream.read(1024)
+      if buf:
+          decoder.process_raw(buf, False, False)
+      else:
+          break
+  stream.close()
+  decoder.end_utt()
+
+  #todo make this cleaner/shorter
+  decoder_output =  [(seg.word, seg.start_frame, seg.end_frame) for seg in decoder.seg()]
+  offset= decoder_output[0][1]
+
+  cmu_list =  [(seg.word, seg.start_frame-offset, seg.end_frame-offset) for seg in decoder.seg()]
+
+  phoneme_list=['SIL','+SPN+','+NSN+','AA','AE','AH','AO','AW','AY','B','CH','D','DH','EH','ER','EY','F','G','HH','IH','IY','JH','K','L','M','N','NG','OW','OY','P','R','S','SH','T','TH','UH','UW','V','W','Y','Z','ZH']
+  phoneme_dict={}
+  for i,p in enumerate(phoneme_list):
+    phoneme_dict[p]=i
+
+  features=cmu_to_number_list(cmu_list)
+  
+  #add zeros to the end if size does not fit
+  delta= expected_len-len(features)
+  features+=[0]*delta
+
+  return np.array(features)
+
+
+#added by GM
+def cmu_to_number_list(cmu_list):
+  already_added=False
+  window_size=4
+  intermediate_list=[]
+  cmu_list[0]=(cmu_list[0][0],0,cmu_list[0][2])
+  for tup in cmu_list:
+    time_ms=(tup[2]-tup[1]+1)*10
+    factor=time_ms//window_size # for the 4 ms windows
+    if (time_ms%window_size!=0):#goht nöd uf
+      if(already_added):
+        already_added=False
+      else:
+        factor+=1
+        already_added=True
+    multiple_numbers=[phoneme_dict[tup[0]]]*factor    
+    intermediate_list.append(multiple_numbers)
+    final_list = list(itertools.chain(*intermediate_list))
+  return final_list
 
 
 @gin.register
