@@ -22,6 +22,12 @@ import librosa
 import numpy as np
 import tensorflow.compat.v2 as tf
 
+
+#for phoneme recognition:
+import itertools
+import pocketsphinx
+import os
+
 _CREPE_SAMPLE_RATE = 16000
 _CREPE_FRAME_SIZE = 1024
 
