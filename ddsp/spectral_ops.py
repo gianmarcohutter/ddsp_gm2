@@ -269,7 +269,7 @@ def compute_phoneme(audio,sample_rate,frame_rate):
   config.set_string('-lm', os.path.join(MODELDIR, 'en-us-phone.lm.bin'))
   config.set_boolean('-remove_silence', False)# these two lines are added to get correct timing but supposedly they make the prediction worse
   config.set_boolean('-remove_noise', False)#
-
+  decoder = pocketsphinx.Decoder(config)
   decoder.start_utt()
   stream = open(filename, 'rb')
   while True:
