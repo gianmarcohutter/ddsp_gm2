@@ -19,7 +19,7 @@ DefaultPreprocessor.time_steps = 1000
 Autoencoder.encoder = @encoders.MfccTimeDistributedRnnEncoder()
 MfccTimeDistributedRnnEncoder.rnn_channels = 512
 MfccTimeDistributedRnnEncoder.rnn_type = 'gru'
-MfccTimeDistributedRnnEncoder.z_dims = 16
+MfccTimeDistributedRnnEncoder.z_dims = 64
 MfccTimeDistributedRnnEncoder.z_time_steps = 125
 
 # Decoder
