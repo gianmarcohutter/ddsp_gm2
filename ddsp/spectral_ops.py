@@ -13,165 +13,330 @@
 # limitations under the License.
 
 # Lint as: python3
-"""Apache Beam pipeline for computing TFRecord dataset from audio files."""
+"""Library of FFT operations for loss functions and conditioning."""
 
-from absl import logging
-import apache_beam as beam
-from ddsp import spectral_ops
+import crepe
+from ddsp.core import tf_float32
+import gin
+import librosa
 import numpy as np
-import pydub
 import tensorflow.compat.v2 as tf
 
+_CREPE_SAMPLE_RATE = 16000
+_CREPE_FRAME_SIZE = 1024
+
+F0_RANGE = 127.0  # MIDI
+LD_RANGE = 120.0  # dB
 
 
-def _load_audio_as_array(audio_path: str,
-                         sample_rate: int) -> np.array:
-  """Load audio file at specified sample rate and return an array.
-  When `sample_rate` > original SR of audio file, Pydub may miss samples when
-  reading file defined in `audio_path`. Must manually zero-pad missing samples.
+def safe_log(x, eps=1e-5):
+  return tf.math.log(x + eps)
+
+
+def stft(audio, frame_size=2048, overlap=0.75, pad_end=True):
+  """Differentiable stft in tensorflow, computed in batch."""
+  audio = tf_float32(audio)
+  assert frame_size * overlap % 2.0 == 0.0
+  s = tf.signal.stft(
+      signals=audio,
+      frame_length=int(frame_size),
+      frame_step=int(frame_size * (1.0 - overlap)),
+      fft_length=int(frame_size),
+      pad_end=pad_end)
+  return s
+
+
+def stft_np(audio, frame_size=2048, overlap=0.75, pad_end=True):
+  """Non-differentiable stft using librosa, one example at a time."""
+  assert frame_size * overlap % 2.0 == 0.0
+  hop_size = int(frame_size * (1.0 - overlap))
+  is_2d = (len(audio.shape) == 2)
+
+  if pad_end:
+    n_samples_initial = int(audio.shape[-1])
+    n_frames = int(np.ceil(n_samples_initial / hop_size))
+    n_samples_final = (n_frames - 1) * hop_size + frame_size
+    pad = n_samples_final - n_samples_initial
+    padding = ((0, 0), (0, pad)) if is_2d else ((0, pad),)
+    audio = np.pad(audio, padding, 'constant')
+
+  def stft_fn(y):
+    return librosa.stft(y=y,
+                        n_fft=int(frame_size),
+                        hop_length=hop_size,
+                        center=False).T
+
+  s = np.stack([stft_fn(a) for a in audio]) if is_2d else stft_fn(audio)
+  return s
+
+
+@gin.register
+def compute_mag(audio, size=2048, overlap=0.75, pad_end=True):
+  mag = tf.abs(stft(audio, frame_size=size, overlap=overlap, pad_end=pad_end))
+  return tf_float32(mag)
+
+
+@gin.register
+def compute_mel(audio,
+                lo_hz=0.0,
+                hi_hz=8000.0,
+                bins=64,
+                fft_size=2048,
+                overlap=0.75,
+                pad_end=True):
+  """Calculate Mel Spectrogram."""
+  mag = compute_mag(audio, fft_size, overlap, pad_end)
+  num_spectrogram_bins = int(mag.shape[-1])
+  linear_to_mel_matrix = tf.signal.linear_to_mel_weight_matrix(
+      bins, num_spectrogram_bins, 16000, lo_hz, hi_hz)
+  mel = tf.tensordot(mag, linear_to_mel_matrix, 1)
+  mel.set_shape(mag.shape[:-1].concatenate(linear_to_mel_matrix.shape[-1:]))
+  return mel
+
+
+@gin.register
+def compute_logmag(audio, size=2048, overlap=0.75, pad_end=True):
+  return safe_log(compute_mag(audio, size, overlap, pad_end))
+
+
+@gin.register
+def compute_logmel(audio,
+                   lo_hz=80.0,
+                   hi_hz=7600.0,
+                   bins=64,
+                   fft_size=2048,
+                   overlap=0.75,
+                   pad_end=True):
+  mel = compute_mel(audio, lo_hz, hi_hz, bins, fft_size, overlap, pad_end)
+  return safe_log(mel)
+
+
+@gin.register
+def compute_mfcc(audio,
+                 lo_hz=20.0,
+                 hi_hz=8000.0,
+                 fft_size=1024,
+                 mel_bins=128,
+                 mfcc_bins=13,
+                 overlap=0.75,
+                 pad_end=True):
+  """Calculate Mel-frequency Cepstral Coefficients."""
+  logmel = compute_logmel(
+      audio,
+      lo_hz=lo_hz,
+      hi_hz=hi_hz,
+      bins=mel_bins,
+      fft_size=fft_size,
+      overlap=overlap,
+      pad_end=pad_end)
+  mfccs = tf.signal.mfccs_from_log_mel_spectrograms(logmel)
+  return mfccs[..., :mfcc_bins]
+
+
+def diff(x, axis=-1):
+  """Take the finite difference of a tensor along an axis.
   Args:
-    audio_path: path to audio file
-    sample_rate: desired sample rate (can be different from original SR)
+    x: Input tensor of any dimension.
+    axis: Axis on which to take the finite difference.
   Returns:
-    audio: audio in np.float32
+    d: Tensor with size less than x by 1 along the difference dimension.
+  Raises:
+    ValueError: Axis out of range for tensor.
   """
-  with tf.io.gfile.GFile(audio_path, 'rb') as f:
-    # Load audio at original SR
-    audio_segment = (pydub.AudioSegment.from_file(f).set_channels(1))
-    # Compute expected length at given `sample_rate`
-    expected_len = int(audio_segment.duration_seconds * sample_rate)
-    # Resample to `sample_rate`
-    audio_segment = audio_segment.set_frame_rate(sample_rate)
-    audio = np.array(audio_segment.get_array_of_samples()).astype(np.float32)
-    # Zero pad missing samples, if any
-    audio = spectral_ops.pad_or_trim_to_expected_length(audio, expected_len)
-  # Convert from int to float representation.
-  audio /= 2**(8 * audio_segment.sample_width)
-  return audio
+  shape = x.shape.as_list()
+  if axis >= len(shape):
+    raise ValueError('Invalid axis index: %d for tensor with only %d axes.' %
+                     (axis, len(shape)))
+
+  begin_back = [0 for _ in range(len(shape))]
+  begin_front = [0 for _ in range(len(shape))]
+  begin_front[axis] = 1
+
+  shape[axis] -= 1
+  slice_front = tf.slice(x, begin_front, shape)
+  slice_back = tf.slice(x, begin_back, shape)
+  d = slice_front - slice_back
+  return d
 
 
-def _load_audio(audio_path, sample_rate):
-  """Load audio file."""
-  logging.info("Loading '%s'.", audio_path)
-  beam.metrics.Metrics.counter('prepare-tfrecord', 'load-audio').inc()
-  audio = _load_audio_as_array(audio_path, sample_rate)
-  return {'audio': audio}
-
-
-def add_loudness(ex, sample_rate, frame_rate, n_fft=2048):
-  """Add loudness in dB."""
-  beam.metrics.Metrics.counter('prepare-tfrecord', 'compute-loudness').inc()
-  audio = ex['audio']
-  mean_loudness_db = spectral_ops.compute_loudness(audio, sample_rate,
-                                                   frame_rate, n_fft)
-  ex = dict(ex)
-  ex['loudness_db'] = mean_loudness_db.astype(np.float32)
-  return ex
-
-
-def _add_f0_estimate(ex, sample_rate, frame_rate):
-  """Add fundamental frequency (f0) estimate using CREPE."""
-  beam.metrics.Metrics.counter('prepare-tfrecord', 'estimate-f0').inc()
-  audio = ex['audio']
-  f0_hz, f0_confidence = spectral_ops.compute_f0(audio, sample_rate, frame_rate)
-  ex = dict(ex)
-  ex.update({
-      'f0_hz': f0_hz.astype(np.float32),
-      'f0_confidence': f0_confidence.astype(np.float32)
-  })
-  return ex
-
-
-def split_example(
-    ex, sample_rate, frame_rate, window_secs, hop_secs):
-  """Splits example into windows, padding final window if needed."""
-
-  def get_windows(sequence, rate):
-    window_size = int(window_secs * rate)
-    hop_size = int(hop_secs * rate)
-    n_windows = int(np.ceil((len(sequence) - window_size) / hop_size))  + 1
-    n_samples_padded = (n_windows - 1) * hop_size + window_size
-    n_padding = n_samples_padded - len(sequence)
-    sequence = np.pad(sequence, (0, n_padding), mode='constant')
-    for window_end in range(window_size, len(sequence) + 1, hop_size):
-      yield sequence[window_end-window_size:window_end]
-
-  for audio, loudness_db, f0_hz, f0_confidence in zip(
-      get_windows(ex['audio'], sample_rate),
-      get_windows(ex['loudness_db'], frame_rate),
-      get_windows(ex['f0_hz'], frame_rate),
-      get_windows(ex['f0_confidence'], frame_rate)):
-    beam.metrics.Metrics.counter('prepare-tfrecord', 'split-example').inc()
-    yield {
-        'audio': audio,
-        'loudness_db': loudness_db,
-        'f0_hz': f0_hz,
-        'f0_confidence': f0_confidence
-    }
-
-
-def float_dict_to_tfexample(float_dict):
-  """Convert dictionary of float arrays to tf.train.Example proto."""
-  return tf.train.Example(
-      features=tf.train.Features(
-          feature={
-              k: tf.train.Feature(float_list=tf.train.FloatList(value=v))
-              for k, v in float_dict.items()
-          }
-      ))
-
-
-def prepare_tfrecord(
-    input_audio_paths,
-    output_tfrecord_path,
-    num_shards=None,
-    sample_rate=16000,
-    frame_rate=250,
-    window_secs=4,
-    hop_secs=1,
-    pipeline_options=''):
-  """Prepares a TFRecord for use in training, evaluation, and prediction.
+@gin.register
+def compute_loudness(audio,
+                     sample_rate=16000,
+                     frame_rate=250,
+                     n_fft=2048,
+                     range_db=LD_RANGE,
+                     ref_db=20.7,
+                     use_tf=False):
+  """Perceptual loudness in dB, relative to white noise, amplitude=1.
+  Function is differentiable if use_tf=True.
   Args:
-    input_audio_paths: An iterable of paths to audio files to include in
-      TFRecord.
-    output_tfrecord_path: The prefix path to the output TFRecord. Shard numbers
-      will be added to actual path(s).
-    num_shards: The number of shards to use for the TFRecord. If None, this
-      number will be determined automatically.
-    sample_rate: The sample rate to use for the audio.
-    frame_rate: The frame rate to use for f0 and loudness features.
-      If set to None, these features will not be computed.
-    window_secs: The size of the sliding window (in seconds) to use to
-      split the audio and features. If 0, they will not be split.
-    hop_secs: The number of seconds to hop when computing the sliding
-      windows.
-    pipeline_options: An iterable of command line arguments to be used as
-      options for the Beam Pipeline.
+    audio: Numpy ndarray or tensor. Shape [batch_size, audio_length] or
+      [batch_size,].
+    sample_rate: Audio sample rate in Hz.
+    frame_rate: Rate of loudness frames in Hz.
+    n_fft: Fft window size.
+    range_db: Sets the dynamic range of loudness in decibles. The minimum
+      loudness (per a frequency bin) corresponds to -range_db.
+    ref_db: Sets the reference maximum perceptual loudness as given by
+      (A_weighting + 10 * log10(abs(stft(audio))**2.0). The default value
+      corresponds to white noise with amplitude=1.0 and n_fft=2048. There is a
+      slight dependence on fft_size due to different granularity of perceptual
+      weighting.
+    use_tf: Make function differentiable by using tensorflow.
+  Returns:
+    Loudness in decibels. Shape [batch_size, n_frames] or [n_frames,].
   """
-  pipeline_options = beam.options.pipeline_options.PipelineOptions(
-      pipeline_options)
-  with beam.Pipeline(options=pipeline_options) as pipeline:
-    examples = (
-        pipeline
-        | beam.Create(input_audio_paths)
-        | beam.Map(_load_audio, sample_rate))
+  if sample_rate % frame_rate != 0:
+    raise ValueError(
+        'frame_rate: {} must evenly divide sample_rate: {}.'
+        'For default frame_rate: 250Hz, suggested sample_rate: 16kHz or 48kHz'
+        .format(frame_rate, sample_rate))
 
-    if frame_rate:
-      examples = (
-          examples
-          | beam.Map(_add_f0_estimate, sample_rate, frame_rate)
-          | beam.Map(add_loudness, sample_rate, frame_rate))
+  # Pick tensorflow or numpy.
+  lib = tf if use_tf else np
 
-    if window_secs:
-      examples |= beam.FlatMap(
-          split_example, sample_rate, frame_rate, window_secs, hop_secs)
+  # Make inputs tensors for tensorflow.
+  audio = tf_float32(audio) if use_tf else audio
 
-    _ = (
-        examples
-        | beam.Reshuffle()
-        | beam.Map(float_dict_to_tfexample)
-        | beam.io.tfrecordio.WriteToTFRecord(
-            output_tfrecord_path,
-            num_shards=num_shards,
-            coder=beam.coders.ProtoCoder(tf.train.Example))
-    )
+  # Temporarily a batch dimension for single examples.
+  is_1d = (len(audio.shape) == 1)
+  audio = audio[lib.newaxis, :] if is_1d else audio
+
+  # Take STFT.
+  hop_size = sample_rate // frame_rate
+  overlap = 1 - hop_size / n_fft
+  stft_fn = stft if use_tf else stft_np
+  s = stft_fn(audio, frame_size=n_fft, overlap=overlap, pad_end=True)
+
+  # Compute power
+  amplitude = lib.abs(s)
+  log10 = (lambda x: tf.math.log(x) / tf.math.log(10.0)) if use_tf else np.log10
+  amin = 1e-20  # Avoid log(0) instabilities.
+  power_db = log10(lib.maximum(amin, amplitude))
+  power_db *= 20.0
+
+  # Perceptual weighting.
+  frequencies = librosa.fft_frequencies(sr=sample_rate, n_fft=n_fft)
+  a_weighting = librosa.A_weighting(frequencies)[lib.newaxis, lib.newaxis, :]
+  loudness = power_db + a_weighting
+
+  # Set dynamic range.
+  loudness -= ref_db
+  loudness = lib.maximum(loudness, -range_db)
+  mean = tf.reduce_mean if use_tf else np.mean
+
+  # Average over frequency bins.
+  loudness = mean(loudness, axis=-1)
+
+  # Remove temporary batch dimension.
+  loudness = loudness[0] if is_1d else loudness
+
+  # Compute expected length of loudness vector
+  n_secs = audio.shape[-1] / float(
+      sample_rate)  # `n_secs` can have milliseconds
+  expected_len = int(n_secs * frame_rate)
+
+  # Pad with `-range_db` noise floor or trim vector
+  loudness = pad_or_trim_to_expected_length(
+      loudness, expected_len, -range_db, use_tf=use_tf)
+  return loudness
+
+
+@gin.register
+def compute_f0(audio, sample_rate, frame_rate, viterbi=True):
+  """Fundamental frequency (f0) estimate using CREPE.
+  This function is non-differentiable and takes input as a numpy array.
+  Args:
+    audio: Numpy ndarray of single audio example. Shape [audio_length,].
+    sample_rate: Sample rate in Hz.
+    frame_rate: Rate of f0 frames in Hz.
+    viterbi: Use Viterbi decoding to estimate f0.
+  Returns:
+    f0_hz: Fundamental frequency in Hz. Shape [n_frames,].
+    f0_confidence: Confidence in Hz estimate (scaled [0, 1]). Shape [n_frames,].
+  """
+
+  n_secs = len(audio) / float(sample_rate)  # `n_secs` can have milliseconds
+  crepe_step_size = 1000 / frame_rate  # milliseconds
+  expected_len = int(n_secs * frame_rate)
+  audio = np.asarray(audio)
+
+  # Compute f0 with crepe.
+  _, f0_hz, f0_confidence, _ = crepe.predict(
+      audio,
+      sr=sample_rate,
+      viterbi=viterbi,
+      step_size=crepe_step_size,
+      center=False,
+      verbose=0)
+
+  # Postprocessing on f0_hz
+  f0_hz = pad_or_trim_to_expected_length(f0_hz, expected_len, 0)  # pad with 0
+  f0_hz = f0_hz.astype(np.float32)
+
+  # Postprocessing on f0_confidence
+  f0_confidence = pad_or_trim_to_expected_length(f0_confidence, expected_len, 1)
+  f0_confidence = np.nan_to_num(f0_confidence)   # Set nans to 0 in confidence
+  f0_confidence = f0_confidence.astype(np.float32)
+  return f0_hz, f0_confidence
+
+
+def pad_or_trim_to_expected_length(vector,
+                                   expected_len,
+                                   pad_value=0,
+                                   len_tolerance=20,
+                                   use_tf=False):
+  """Make vector equal to the expected length.
+  Feature extraction functions like `compute_loudness()` or `compute_f0` produce
+  feature vectors that vary in length depending on factors such as `sample_rate`
+  or `hop_size`. This function corrects vectors to the expected length, warning
+  the user if the difference between the vector and expected length was
+  unusually high to begin with.
+  Args:
+    vector: Numpy 1D ndarray. Shape [vector_length,]
+    expected_len: Expected length of vector.
+    pad_value: Value to pad at end of vector.
+    len_tolerance: Tolerance of difference between original and desired vector
+      length.
+    use_tf: Make function differentiable by using tensorflow.
+  Returns:
+    vector: Vector with corrected length.
+  Raises:
+    ValueError: if `len(vector)` is different from `expected_len` beyond
+    `len_tolerance` to begin with.
+  """
+  expected_len = int(expected_len)
+  vector_len = int(vector.shape[-1])
+
+  if abs(vector_len - expected_len) > len_tolerance:
+    # Ensure vector was close to expected length to begin with
+    raise ValueError('Vector length: {} differs from expected length: {} '
+                     'beyond tolerance of : {}'.format(vector_len,
+                                                       expected_len,
+                                                       len_tolerance))
+  # Pick tensorflow or numpy.
+  lib = tf if use_tf else np
+
+  is_1d = (len(vector.shape) == 1)
+  vector = vector[lib.newaxis, :] if is_1d else vector
+
+  # Pad missing samples
+  if vector_len < expected_len:
+    n_padding = expected_len - vector_len
+    vector = lib.pad(
+        vector, ((0, 0), (0, n_padding)),
+        mode='constant',
+        constant_values=pad_value)
+  # Trim samples
+  elif vector_len > expected_len:
+    vector = vector[..., :expected_len]
+
+  # Remove temporary batch dimension.
+  vector = vector[0] if is_1d else vector
+  return vector
+
+
+def reset_crepe():
+  """Reset the global state of CREPE to force model re-building."""
+  for k in crepe.core.models:
+    crepe.core.models[k] = None
