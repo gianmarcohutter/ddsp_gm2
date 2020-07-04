@@ -52,13 +52,29 @@ def _load_audio_as_array(audio_path: str,
   audio /= 2**(8 * audio_segment.sample_width)
   return audio
 
-
+'''
 def _load_audio(audio_path, sample_rate):
   """Load audio file."""
   logging.info("Loading '%s'.", audio_path)
   beam.metrics.Metrics.counter('prepare-tfrecord', 'load-audio').inc()
   audio = _load_audio_as_array(audio_path, sample_rate)
   return {'audio': audio}
+'''
+def _load_audio_as_bytestream(audio_path):
+  file=open(audio_path, 'rb')
+  bytestream = file.read()
+  file.close()
+  return bytestream
+
+def _load_audio_array_and_bytes(audio_path, sample_rate):
+  """Load audio file as np.array and as bytestream"""
+  logging.info("Loading '%s'.", audio_path)
+  beam.metrics.Metrics.counter('prepare-tfrecord', 'load-audio').inc()
+  audio = _load_audio_as_array(audio_path, sample_rate)
+  bytestream = _load_audio_as_bytestream(audio_path)
+  return {'audio': audio,
+          'bytestream':bytestream}
+
 
 
 def add_loudness(ex, sample_rate, frame_rate, n_fft=2048):
