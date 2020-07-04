@@ -1,6 +1,4 @@
 def printhello():
-	print("hello")
-
-
+	print("whats up")
 
 a=10
