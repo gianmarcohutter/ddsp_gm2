@@ -27,11 +27,14 @@ import tensorflow.compat.v2 as tf
 def _load_audio_as_array(audio_path: str,
                          sample_rate: int) -> np.array:
   """Load audio file at specified sample rate and return an array.
+
   When `sample_rate` > original SR of audio file, Pydub may miss samples when
   reading file defined in `audio_path`. Must manually zero-pad missing samples.
+
   Args:
     audio_path: path to audio file
     sample_rate: desired sample rate (can be different from original SR)
+
   Returns:
     audio: audio in np.float32
   """
@@ -49,13 +52,29 @@ def _load_audio_as_array(audio_path: str,
   audio /= 2**(8 * audio_segment.sample_width)
   return audio
 
-
+'''
 def _load_audio(audio_path, sample_rate):
   """Load audio file."""
   logging.info("Loading '%s'.", audio_path)
   beam.metrics.Metrics.counter('prepare-tfrecord', 'load-audio').inc()
   audio = _load_audio_as_array(audio_path, sample_rate)
   return {'audio': audio}
+'''
+def _load_audio_as_bytestream(audio_path):
+  file=open(audio_path, 'rb')
+  bytestream = file.read()
+  file.close()
+  return bytestream
+
+def _load_audio_array_and_bytes(audio_path, sample_rate):
+  """Load audio file as np.array and as bytestream"""
+  logging.info("Loading '%s'.", audio_path)
+  beam.metrics.Metrics.counter('prepare-tfrecord', 'load-audio').inc()
+  audio = _load_audio_as_array(audio_path, sample_rate)
+  bytestream = _load_audio_as_bytestream(audio_path)
+  return {'audio': audio,
+          'bytestream':bytestream}
+
 
 
 def add_loudness(ex, sample_rate, frame_rate, n_fft=2048):
@@ -81,6 +100,26 @@ def _add_f0_estimate(ex, sample_rate, frame_rate):
   })
   return ex
 
+def add_phoneme(ex, sample_rate, frame_rate):
+	beam.metrics.Metrics.counter('prepare-tfrecord', 'get-phoneme').inc()
+	audio = ex['audio']
+	ex = dict(ex)
+	phoneme=spectral_ops.compute_phoneme(audio,sample_rate,frame_rate)
+	ex['phoneme'] = phoneme.astype(np.float32)
+	'''
+	#these two lines together worked
+	f0_hz, f0_confidence = spectral_ops.compute_f0(audio, sample_rate, frame_rate)
+	ex['phoneme'] =f0_hz.astype(np.float32)
+	
+	beam.metrics.Metrics.counter('prepare-tfrecord', 'get-phoneme').inc()
+	audio = ex['audio']
+	mean_loudness_db = spectral_ops.compute_loudness(audio, sample_rate,
+						       frame_rate, 2048)
+	ex = dict(ex)
+	ex['phoneme'] = mean_loudness_db.astype(np.float32)
+	'''
+	return ex
+
 
 def split_example(
     ex, sample_rate, frame_rate, window_secs, hop_secs):
@@ -96,17 +135,19 @@ def split_example(
     for window_end in range(window_size, len(sequence) + 1, hop_size):
       yield sequence[window_end-window_size:window_end]
 
-  for audio, loudness_db, f0_hz, f0_confidence in zip(
+  for audio, loudness_db, f0_hz, f0_confidence, phoneme in zip(
       get_windows(ex['audio'], sample_rate),
       get_windows(ex['loudness_db'], frame_rate),
       get_windows(ex['f0_hz'], frame_rate),
-      get_windows(ex['f0_confidence'], frame_rate)):
+      get_windows(ex['f0_confidence'], frame_rate),
+      get_windows(ex['phoneme'],frame_rate)):
     beam.metrics.Metrics.counter('prepare-tfrecord', 'split-example').inc()
     yield {
         'audio': audio,
         'loudness_db': loudness_db,
         'f0_hz': f0_hz,
-        'f0_confidence': f0_confidence
+        'f0_confidence': f0_confidence,
+        'phoneme': phoneme
     }
 
 
@@ -131,6 +172,7 @@ def prepare_tfrecord(
     hop_secs=1,
     pipeline_options=''):
   """Prepares a TFRecord for use in training, evaluation, and prediction.
+
   Args:
     input_audio_paths: An iterable of paths to audio files to include in
       TFRecord.
@@ -160,7 +202,8 @@ def prepare_tfrecord(
       examples = (
           examples
           | beam.Map(_add_f0_estimate, sample_rate, frame_rate)
-          | beam.Map(add_loudness, sample_rate, frame_rate))
+          | beam.Map(add_loudness, sample_rate, frame_rate)
+          | beam.Map(add_phoneme, sample_rate, frame_rate))
 
     if window_secs:
       examples |= beam.FlatMap(
