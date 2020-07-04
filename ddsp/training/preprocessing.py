@@ -53,7 +53,7 @@ class Preprocessor(object):
     """
     return ddsp.core.copy_if_tf_function(features)
 
-'''
+
 @gin.register
 class DefaultPreprocessor(Preprocessor):
   """Default class that resamples features and adds `f0_hz` key."""
@@ -76,7 +76,6 @@ class DefaultPreprocessor(Preprocessor):
     features['f0_scaled'] = hz_to_midi(features['f0_hz']) / F0_RANGE
     features['ld_scaled'] = (features['loudness_db'] / LD_RANGE) + 1.0
     return features
-'''
 
 @gin.register
 class PhonemePreprocessor(Preprocessor):
