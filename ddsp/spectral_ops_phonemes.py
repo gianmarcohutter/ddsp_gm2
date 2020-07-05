@@ -281,8 +281,8 @@ def compute_phoneme(audio,sample_rate,frame_rate):
   decoder = pocketsphinx.Decoder(config)
   decoder.start_utt()
   #stream = open(filename, 'rb') #todo change this
-  audio = restore_bytestring(audio)
-  decoder.process_raw(audio, False, False)
+  audio_bytes = restore_bytestring(audio)
+  decoder.process_raw(audio_bytes, False, False)
   # while True:
   #     buf = stream.read(1024)
   #     if buf:
@@ -307,7 +307,7 @@ def compute_phoneme(audio,sample_rate,frame_rate):
   
   #add zeros to the end if size does not fit
   delta= expected_len-len(features)
-  print("had to add "+str(delta)+ "zeros to the phoneme vetor")
+  print("had to add "+str(delta)+ " zeros to the phoneme vetor")
   features+=[0]*delta
 
   return np.array(features)
