@@ -17,7 +17,7 @@
 
 from absl import logging
 import apache_beam as beam
-from ddsp import spectral_ops
+from ddsp import spectral_ops_phonemes
 import numpy as np
 import pydub
 import tensorflow.compat.v2 as tf
@@ -52,13 +52,23 @@ def _load_audio_as_array(audio_path: str,
   audio /= 2**(8 * audio_segment.sample_width)
   return audio
 
-'''
+
 def _load_audio(audio_path, sample_rate):
   """Load audio file."""
   logging.info("Loading '%s'.", audio_path)
   beam.metrics.Metrics.counter('prepare-tfrecord', 'load-audio').inc()
   audio = _load_audio_as_array(audio_path, sample_rate)
   return {'audio': audio}
+
+def restore_bytestring(audio):
+  audio_segment=pydub.AudioSegment.empty()
+  audio *= 2**(8 * 2) #16 is the audio sample width
+  python_list= list(audio.astype(np.int16))
+  bytestream = audio_segment._spawn(python_list)._data
+  return bytestream
+
+
+
 '''
 def _load_audio_as_bytestream(audio_path):
   file=open(audio_path, 'rb')
@@ -74,7 +84,7 @@ def _load_audio_array_and_bytes(audio_path, sample_rate):
   bytestream = _load_audio_as_bytestream(audio_path)
   return {'audio': audio,
           'bytestream':bytestream}
-
+'''
 
 
 def add_loudness(ex, sample_rate, frame_rate, n_fft=2048):
@@ -103,8 +113,9 @@ def _add_f0_estimate(ex, sample_rate, frame_rate):
 def add_phoneme(ex, sample_rate, frame_rate):
 	beam.metrics.Metrics.counter('prepare-tfrecord', 'get-phoneme').inc()
 	audio = ex['audio']
+  audio = restore_bytestring(audio)
 	ex = dict(ex)
-	phoneme=spectral_ops.compute_phoneme(audio,sample_rate,frame_rate)
+	phoneme=spectral_ops_phonemes.compute_phoneme(audio,sample_rate,frame_rate)
 	ex['phoneme'] = phoneme.astype(np.float32)
 	'''
 	#these two lines together worked

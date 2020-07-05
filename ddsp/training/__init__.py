@@ -27,3 +27,5 @@ from ddsp.training import preprocessing
 from ddsp.training import summaries
 from ddsp.training import train_util
 from ddsp.training import trainers
+
+from ddsp.training import data_phoneme
