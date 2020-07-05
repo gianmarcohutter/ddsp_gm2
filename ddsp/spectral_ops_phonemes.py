@@ -303,7 +303,7 @@ def compute_phoneme(audio,sample_rate,frame_rate):
   for i,p in enumerate(phoneme_list):
     phoneme_dict[p]=i
 
-  features=cmu_to_number_list(cmu_list)
+  features=cmu_to_number_list(cmu_list,phoneme_dict)
   
   #add zeros to the end if size does not fit
   delta= expected_len-len(features)
@@ -314,7 +314,7 @@ def compute_phoneme(audio,sample_rate,frame_rate):
 
 
 #added by GM
-def cmu_to_number_list(cmu_list):
+def cmu_to_number_list(cmu_list,phoneme_dict):
   already_added=False
   window_size=4
   intermediate_list=[]
