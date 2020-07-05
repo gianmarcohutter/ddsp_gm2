@@ -70,7 +70,7 @@ def run():
   for filepattern in FLAGS.input_audio_filepatterns:
     input_audio_paths.extend(tf.io.gfile.glob(filepattern))
 
-  prepare_tfrecord_phonemes(
+  prepare_tfrecord(
       input_audio_paths,
       FLAGS.output_tfrecord_path,
       num_shards=FLAGS.num_shards,
