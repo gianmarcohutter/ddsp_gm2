@@ -115,10 +115,10 @@ def add_phoneme(ex, sample_rate, frame_rate):
 	audio = ex['audio']
   #audio = restore_bytestring(audio)
 	ex = dict(ex)
-  '''
-	phoneme=spectral_ops_phonemes.compute_phoneme(audio,sample_rate,frame_rate)
-	ex['phoneme'] = phoneme.astype(np.float32)
-	'''
+
+	#phoneme=spectral_ops_phonemes.compute_phoneme(audio,sample_rate,frame_rate)
+	#ex['phoneme'] = phoneme.astype(np.float32)
+	
 	#these two lines together worked
 	f0_hz, f0_confidence = spectral_ops_phonemes.compute_f0(audio, sample_rate, frame_rate)
 	ex['phoneme'] =f0_hz.astype(np.float32)
