@@ -252,6 +252,14 @@ def compute_loudness(audio,
       loudness, expected_len, -range_db, use_tf=use_tf)
   return loudness
 
+def restore_bytestring(audio):
+  audio_segment=pydub.AudioSegment.empty()
+  audio *= 2**(8 * 2) #16 is the audio sample width
+  python_list= list(audio.astype(np.int16))
+  bytestream = audio_segment._spawn(python_list)._data
+  return bytestream
+
+
 @gin.register
 def compute_phoneme(audio,sample_rate,frame_rate):
   # Compute expected length of phoneme vector
@@ -271,14 +279,16 @@ def compute_phoneme(audio,sample_rate,frame_rate):
   config.set_boolean('-remove_noise', False)#
   decoder = pocketsphinx.Decoder(config)
   decoder.start_utt()
-  stream = open(filename, 'rb')
-  while True:
-      buf = stream.read(1024)
-      if buf:
-          decoder.process_raw(buf, False, False)
-      else:
-          break
-  stream.close()
+  #stream = open(filename, 'rb') #todo change this
+  audio = restore_bytestring(audio)
+  decoder.process_raw(audio, False, False)
+  # while True:
+  #     buf = stream.read(1024)
+  #     if buf:
+  #         decoder.process_raw(buf, False, False)
+  #     else:
+  #         break
+  # stream.close()
   decoder.end_utt()
 
   #todo make this cleaner/shorter
@@ -296,6 +306,7 @@ def compute_phoneme(audio,sample_rate,frame_rate):
   
   #add zeros to the end if size does not fit
   delta= expected_len-len(features)
+  print("had to add "+toString(delta)+ "zeros to the phoneme vetor")
   features+=[0]*delta
 
   return np.array(features)

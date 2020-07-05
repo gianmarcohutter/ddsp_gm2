@@ -60,14 +60,6 @@ def _load_audio(audio_path, sample_rate):
   audio = _load_audio_as_array(audio_path, sample_rate)
   return {'audio': audio}
 
-def restore_bytestring(audio):
-  audio_segment=pydub.AudioSegment.empty()
-  audio *= 2**(8 * 2) #16 is the audio sample width
-  python_list= list(audio.astype(np.int16))
-  bytestream = audio_segment._spawn(python_list)._data
-  return bytestream
-
-
 
 '''
 def _load_audio_as_bytestream(audio_path):
@@ -111,26 +103,26 @@ def _add_f0_estimate(ex, sample_rate, frame_rate):
   return ex
 
 def add_phoneme(ex, sample_rate, frame_rate):
-  '''
   beam.metrics.Metrics.counter('prepare-tfrecord', 'get-phoneme').inc()
   audio = ex['audio']
-  #audio = restore_bytestring(audio)
   ex = dict(ex)
 
-  #phoneme=spectral_ops_phonemes.compute_phoneme(audio,sample_rate,frame_rate)
-  #ex['phoneme'] = phoneme.astype(np.float32)
+  phoneme=spectral_ops_phonemes.compute_phoneme(audio,sample_rate,frame_rate)
+  ex['phoneme'] = phoneme.astype(np.float32)
 
+  return ex
+  '''
   #these two lines together worked
   f0_hz, f0_confidence = spectral_ops_phonemes.compute_f0(audio, sample_rate, frame_rate)
   ex['phoneme'] =f0_hz.astype(np.float32)
-  '''
+
   beam.metrics.Metrics.counter('prepare-tfrecord', 'get-phoneme').inc()
   audio = ex['audio']
   mean_loudness_db = spectral_ops.compute_loudness(audio, sample_rate,frame_rate, 2048)
   ex = dict(ex)
   ex['phoneme'] = mean_loudness_db.astype(np.float32)
+  '''
 
-  return ex
 
 
 def split_example(
