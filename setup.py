@@ -67,6 +67,7 @@ setuptools.setup(
         'console_scripts': [
             'ddsp_run = ddsp.training.ddsp_run:console_entry_point',
             'ddsp_prepare_tfrecord = ddsp.training.data_preparation.prepare_tfrecord:console_entry_point',
+            'ddsp_prepare_tfrecord_phonemes = ddsp.training.data_preparation.prepare_tfrecord_phonemes:console_entry_point',
         ],
     },
     classifiers=[
