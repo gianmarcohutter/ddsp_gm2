@@ -27,6 +27,7 @@ import tensorflow.compat.v2 as tf
 import itertools
 import pocketsphinx
 import os
+import pydub
 
 _CREPE_SAMPLE_RATE = 16000
 _CREPE_FRAME_SIZE = 1024

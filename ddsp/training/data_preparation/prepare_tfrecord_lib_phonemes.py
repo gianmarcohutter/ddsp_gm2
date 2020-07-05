@@ -103,6 +103,7 @@ def _add_f0_estimate(ex, sample_rate, frame_rate):
   return ex
 
 def add_phoneme(ex, sample_rate, frame_rate):
+  """add phonemes determined with CMU Sphinx"""
   beam.metrics.Metrics.counter('prepare-tfrecord', 'get-phoneme').inc()
   audio = ex['audio']
   ex = dict(ex)
