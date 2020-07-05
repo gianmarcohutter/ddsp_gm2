@@ -232,6 +232,6 @@ class TFRecordProvider(RecordProvider):
                frame_rate=250):
     """TFRecordProvider constructor."""
     super().__init__(file_pattern, example_secs, sample_rate,
-                     frame_rate, tf.data.TFRecordDataset)
+                     frame_rate, tf.data_phoneme.TFRecordDataset)
 
 
