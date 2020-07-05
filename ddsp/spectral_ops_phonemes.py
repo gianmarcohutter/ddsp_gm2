@@ -307,7 +307,7 @@ def compute_phoneme(audio,sample_rate,frame_rate):
   
   #add zeros to the end if size does not fit
   delta= expected_len-len(features)
-  print("had to add "+toString(delta)+ "zeros to the phoneme vetor")
+  print("had to add "+str(delta)+ "zeros to the phoneme vetor")
   features+=[0]*delta
 
   return np.array(features)
