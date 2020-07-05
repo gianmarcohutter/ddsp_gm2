@@ -47,7 +47,7 @@ def _load_audio_as_array(audio_path: str,
     audio_segment = audio_segment.set_frame_rate(sample_rate)
     audio = np.array(audio_segment.get_array_of_samples()).astype(np.float32)
     # Zero pad missing samples, if any
-    audio = spectral_ops.pad_or_trim_to_expected_length(audio, expected_len)
+    audio = spectral_ops_phoenemes.pad_or_trim_to_expected_length(audio, expected_len)
   # Convert from int to float representation.
   audio /= 2**(8 * audio_segment.sample_width)
   return audio
@@ -115,13 +115,14 @@ def add_phoneme(ex, sample_rate, frame_rate):
 	audio = ex['audio']
   audio = restore_bytestring(audio)
 	ex = dict(ex)
+  '''
 	phoneme=spectral_ops_phonemes.compute_phoneme(audio,sample_rate,frame_rate)
 	ex['phoneme'] = phoneme.astype(np.float32)
 	'''
 	#these two lines together worked
 	f0_hz, f0_confidence = spectral_ops.compute_f0(audio, sample_rate, frame_rate)
 	ex['phoneme'] =f0_hz.astype(np.float32)
-	
+	'''
 	beam.metrics.Metrics.counter('prepare-tfrecord', 'get-phoneme').inc()
 	audio = ex['audio']
 	mean_loudness_db = spectral_ops.compute_loudness(audio, sample_rate,
