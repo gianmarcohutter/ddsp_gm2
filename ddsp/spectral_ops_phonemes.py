@@ -255,8 +255,8 @@ def compute_loudness(audio,
 
 def restore_bytestring(audio):
   audio_segment=pydub.AudioSegment.empty()
-  audio *= 2**(8 * 2) #16 is the audio sample width
-  python_list= list(audio.astype(np.int16))
+  audio_upsampled = audio * 2**(8 * 2) #16 is the audio sample width
+  python_list= list(audio_upsampled.astype(np.int16))
   bytestream = audio_segment._spawn(python_list)._data
   return bytestream
 
