@@ -274,13 +274,13 @@ def compute_phoneme(audio,sample_rate,frame_rate):
   config = pocketsphinx.Decoder.default_config()
 
   config.set_string('-hmm', os.path.join(MODELDIR, 'en-us'))
-  config.set_string('-allphone', os.path.join(MODELDIR, ' phonetic.lm'))
+  config.set_string('-allphone', os.path.join(MODELDIR, 'phonetic.lm'))
   config.set_string('-lm', os.path.join(MODELDIR, 'en-us-phone.lm.bin'))
   config.set_boolean('-remove_silence', False)# these two lines are added to get correct timing but supposedly they make the prediction worse
   config.set_boolean('-remove_noise', False)#
   decoder = pocketsphinx.Decoder(config)
   decoder.start_utt()
-  #stream = open(filename, 'rb') #todo change this
+  #stream = open(filename, 'rb') 
   audio_bytes = restore_bytestring(audio)
   decoder.process_raw(audio_bytes, False, False)
   # while True:
