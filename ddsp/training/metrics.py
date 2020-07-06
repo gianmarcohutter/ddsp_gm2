@@ -27,9 +27,6 @@ MIN_F0_CONFIDENCE = 0.85
 OUTLIER_MIDI_THRESH = 12
 
 
-#for phonemes recognition
-import spectral_ops_phonemes
-
 
 
 # ---------------------- Helper Functions --------------------------------------
