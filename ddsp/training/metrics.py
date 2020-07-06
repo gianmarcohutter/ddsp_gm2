@@ -27,6 +27,10 @@ MIN_F0_CONFIDENCE = 0.85
 OUTLIER_MIDI_THRESH = 12
 
 
+#for phonemes recognition
+import spectral_ops_phonemes
+
+
 
 # ---------------------- Helper Functions --------------------------------------
 def squeeze(input_vector):
@@ -67,6 +71,24 @@ def compute_audio_features(audio,
 
   return audio_feats
 
+
+def compute_audio_features_with_phonemes(audio,
+                           n_fft=2048,
+                           sample_rate=16000,
+                           frame_rate=250):
+  """Compute features from audio."""
+  audio_feats = {'audio': audio}
+  audio = squeeze(audio)
+
+  audio_feats['loudness_db'] = ddsp.spectral_ops.compute_loudness(
+      audio, sample_rate, frame_rate, n_fft)
+
+  audio_feats['f0_hz'], audio_feats['f0_confidence'] = (
+      ddsp.spectral_ops.compute_f0(audio, sample_rate, frame_rate))
+
+  audio_feats['phonemes'] = ddsp.spectral_ops_phonemes.compute_phoneme(audio,sample_rate,frame_rate)
+
+  return audio_feats
 
 def f0_dist_conf_thresh(f0_hz,
                         f0_hz_gen,
