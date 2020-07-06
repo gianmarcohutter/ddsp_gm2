@@ -222,7 +222,7 @@ class RecordProvider(DataProvider):
 
 
 @gin.register
-class TFRecordProvider(RecordProvider):
+class TFRecordProviderPhoneme(RecordProvider):
   """Class for reading TFRecords and returning a dataset."""
 
   def __init__(self,
