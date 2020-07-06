@@ -5,6 +5,6 @@ include 'datasets/base.gin'
 # --gin_param="TFRecordProvider.file_pattern='/path/to/dataset*.tfrecord'"
 
 # Dataset
-train.data_provider = @data.TFRecordProviderPhoneme()
-evaluate.data_provider = @data.TFRecordProviderPhoneme()
-sample.data_provider = @data.TFRecordProviderPhoneme()
+train.data_provider = @data_phoneme.TFRecordProviderPhoneme()
+evaluate.data_provider = @data_phoneme.TFRecordProviderPhoneme()
+sample.data_provider = @data_phoneme.TFRecordProviderPhoneme()
