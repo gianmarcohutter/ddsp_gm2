@@ -83,7 +83,7 @@ def compute_audio_features_with_phonemes(audio,
   audio_feats['f0_hz'], audio_feats['f0_confidence'] = (
       ddsp.spectral_ops.compute_f0(audio, sample_rate, frame_rate))
 
-  audio_feats['phonemes'] = ddsp.spectral_ops_phonemes.compute_phoneme(audio,sample_rate,frame_rate)
+  audio_feats['phoneme'] = ddsp.spectral_ops_phonemes.compute_phoneme(audio,sample_rate,frame_rate)
 
   return audio_feats
 
