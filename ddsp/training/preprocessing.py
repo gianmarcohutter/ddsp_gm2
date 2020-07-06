@@ -88,8 +88,9 @@ class PhonemePreprocessor(Preprocessor):
 		return self._default_processing(features)
 
 	def _default_processing(self, features):
+    print(features)
 		"""Always resample to `time_steps` and scale 'loudness_db' and 'f0_hz'."""
-		for k in ['loudness_db', 'f0_hz','phoneme']:
+		for k in ['loudness_db', 'f0_hz', 'phoneme']:
 			features[k] = at_least_3d(features[k])
 			features[k] = ddsp.core.resample(features[k], n_timesteps=self.time_steps)
 		# For NN training, scale frequency and loudness to the range [0, 1].
