@@ -256,7 +256,9 @@ def upsample_with_windows(inputs: tf.Tensor,
     raise ValueError('Upsample with windows cannot be used for downsampling'
                      'More input frames ({}) than output timesteps ({})'.format(
                          n_frames, n_timesteps))
-
+  print("gm print for debugging")
+  print(n_timesteps)
+  print(n_intervals)
   if n_timesteps % n_intervals != 0.0:
     minus_one = '' if add_endpoint else ' - 1'
     raise ValueError(
