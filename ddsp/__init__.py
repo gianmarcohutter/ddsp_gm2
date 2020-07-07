@@ -21,7 +21,7 @@ from ddsp import effects
 from ddsp import losses
 from ddsp import processors
 from ddsp import spectral_ops
-from ddsp import spectral_ops_phonemes
+#from ddsp import spectral_ops_phonemes
 from ddsp import synths
 
 # Version number.
