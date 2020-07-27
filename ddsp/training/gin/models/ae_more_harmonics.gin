@@ -30,8 +30,8 @@ RnnFcDecoder.ch = 512
 RnnFcDecoder.layers_per_stack = 3
 RnnFcDecoder.input_keys = ('ld_scaled', 'f0_scaled', 'z')
 RnnFcDecoder.output_splits = (('amps', 1),
-                              ('harmonic_distribution',200),
-                              ('noise_magnitudes', 1))
+                              ('harmonic_distribution', 200),
+                              ('noise_magnitudes', 65))
 
 # Losses
 Autoencoder.losses = [
