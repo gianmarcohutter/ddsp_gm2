@@ -19,14 +19,14 @@ Autoencoder.encoder = @encoders.MfccTimeDistributedRnnEncoder()
 MfccTimeDistributedRnnEncoder.rnn_channels = 1024
 MfccTimeDistributedRnnEncoder.rnn_type = 'gru'
 MfccTimeDistributedRnnEncoder.z_dims = 32
-MfccTimeDistributedRnnEncoder.z_time_steps = 250
+MfccTimeDistributedRnnEncoder.z_time_steps = 125
 
 # Decoder
 Autoencoder.decoder = @decoders.RnnFcDecoder()
 RnnFcDecoder.rnn_channels = 1024
 RnnFcDecoder.rnn_type = 'gru'
 RnnFcDecoder.ch = 1024
-RnnFcDecoder.layers_per_stack = 4
+RnnFcDecoder.layers_per_stack = 3
 RnnFcDecoder.input_keys = ('ld_scaled', 'f0_scaled', 'z')
 RnnFcDecoder.output_splits = (('amps', 1),
                               ('harmonic_distribution', 200),
