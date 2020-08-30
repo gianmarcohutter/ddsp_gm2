@@ -19,6 +19,7 @@ Usage:
 ====================
 ddsp_prepare_tfrecord \
 --input_audio_filepatterns=/path/to/wavs/*wav,/path/to/mp3s/*mp3 \
+--input_alternative_audio_filepattern=/path/to/wavs/*wav,/path/to/mp3s/*mp3 \
 --output_tfrecord_path=/path/to/output.tfrecord \
 --num_shards=10 \
 --alsologtostderr
@@ -35,6 +36,9 @@ FLAGS = flags.FLAGS
 flags.DEFINE_list(
     'input_audio_filepatterns', [],
     'List of filepatterns to glob for input audio files.')
+flags.DEFINE_list(
+    'input_alternative_audio_filepatterns', [],
+    'List of filepatterns to glob for alternative audio files corresponding to the used audio')
 flags.DEFINE_string(
     'output_tfrecord_path', None,
     'The prefix path to the output TFRecord. Shard numbers will be added to '
@@ -70,8 +74,14 @@ def run():
   for filepattern in FLAGS.input_audio_filepatterns:
     input_audio_paths.extend(tf.io.gfile.glob(filepattern))
 
+  input_alternative_audio_paths = []
+  for filepattern_alt in FLAGS.input_alternative_audio_filepatterns:
+    input_alternative_audio_paths.extend(tf.io.gfile.glob(filepattern_alt))
+
+
   prepare_tfrecord(
       input_audio_paths,
+      input_alternative_audio_paths,
       FLAGS.output_tfrecord_path,
       num_shards=FLAGS.num_shards,
       sample_rate=FLAGS.sample_rate,
