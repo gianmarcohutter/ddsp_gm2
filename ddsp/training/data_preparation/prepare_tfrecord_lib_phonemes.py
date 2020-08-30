@@ -62,7 +62,8 @@ def _load_audio(audio_path, sample_rate):
   #GM add "_alt" before the file ending. assuming we only get wav or mp3 the postfix is 4 characters long... 
   alternative_audio_path=alternative_audio_path=audio_path[:-4]+"_alt"+audio_path[-4:]
   logging.info("Loading alternative audio path '%s'.", alternative_audio_path)
-  alternative_audio = _load_audio_as_array(audio_path, sample_rate)
+  alternative_audio = _load_audio_as_array(alternative_audio_path, sample_rate)
+  
   assert(len(audio)==len(alternative_audio)),"audio and alternative_audio need to be the same length!"
 
   return {'audio': audio,'alternative_audio':alternative_audio}
