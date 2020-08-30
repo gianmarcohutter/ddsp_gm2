@@ -58,7 +58,15 @@ def _load_audio(audio_path, sample_rate):
   logging.info("Loading '%s'.", audio_path)
   beam.metrics.Metrics.counter('prepare-tfrecord', 'load-audio').inc()
   audio = _load_audio_as_array(audio_path, sample_rate)
-  return {'audio': audio}
+
+  #GM add "_alt" before the file ending. assuming we only get wav or mp3 the postfix is 4 characters long... 
+  alternative_audio_path=alternative_audio_path=audio_path[:-4]+"_alt"+audio_path[-4:]
+  logging.info("Loading alternative audio path '%s'.", alternative_audio_path)
+  alternative_audio = _load_audio_as_array(audio_path, sample_rate)
+  assert(len(audio)==len(alternative_audio)),"audio and alternative_audio need to be the same length!"
+
+  return {'audio': audio,'alternative_audio':alternative_audio}
+
 
 
 '''
@@ -180,6 +188,8 @@ def prepare_tfrecord(
 
   Args:
     input_audio_paths: An iterable of paths to audio files to include in
+      TFRecord.
+    input_alternative_audio_paths: An iterable of paths to alternative audio files to include in
       TFRecord.
     output_tfrecord_path: The prefix path to the output TFRecord. Shard numbers
       will be added to actual path(s).
