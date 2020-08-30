@@ -70,6 +70,7 @@ flags.DEFINE_list(
 
 
 def run():
+  logging.info("GM running prepare_tfrecord_phonemes")
   input_audio_paths = []
   for filepattern in FLAGS.input_audio_filepatterns:
     input_audio_paths.extend(tf.io.gfile.glob(filepattern))
@@ -79,7 +80,7 @@ def run():
   for path in input_audio_paths:
     if path[-8:-4]!="_alt":
       non_alt_audiopaths.extend(path)
-
+  logging.info("non_alt_audiopaths '%s'.",non_alt_audiopaths)
   input_audio_paths=non_alt_audiopaths
 
 
