@@ -210,6 +210,8 @@ class RecordProvider(DataProvider):
     return {
         'audio':
             tf.io.FixedLenFeature([self._audio_length], dtype=tf.float32),
+        'alternative_audio':
+            tf.io.FixedLenFeature([self._audio_length], dtype=tf.float32),
         'f0_hz':
             tf.io.FixedLenFeature([self._feature_length], dtype=tf.float32),
         'f0_confidence':
