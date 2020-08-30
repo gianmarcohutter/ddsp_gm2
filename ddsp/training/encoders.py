@@ -121,7 +121,7 @@ class MfccTimeDistributedRnnEncoder(Encoder):
     #GM deleteme. just for debugging
     logging.info("available key values at conditioning:")
     for key, value in conditioning.items():
-    	logging.info(key)
+      logging.info(key)
 
     mfccs = spectral_ops.compute_mfcc(
         conditioning['alternative_audio'],

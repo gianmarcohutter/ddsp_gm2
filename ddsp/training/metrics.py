@@ -69,13 +69,16 @@ def compute_audio_features(audio,
   return audio_feats
 
 
-def compute_audio_features_with_phonemes(audio,
+def compute_audio_features_with_phonemes(audio, 
+                           alternative_audio,
                            n_fft=2048,
                            sample_rate=16000,
                            frame_rate=250):
   """Compute features from audio."""
   audio_feats = {'audio': audio}
   audio = squeeze(audio)
+
+  audio_feats['alternative_audio']=alternative_audio
 
   audio_feats['loudness_db'] = ddsp.spectral_ops.compute_loudness(
       audio, sample_rate, frame_rate, n_fft)
