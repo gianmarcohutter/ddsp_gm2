@@ -158,7 +158,7 @@ def split_example(
     beam.metrics.Metrics.counter('prepare-tfrecord', 'split-example').inc()
     yield {
         'audio': audio,
-        'alternative_audio':alternative_audio
+        'alternative_audio':alternative_audio,
         'loudness_db': loudness_db,
         'f0_hz': f0_hz,
         'f0_confidence': f0_confidence,
