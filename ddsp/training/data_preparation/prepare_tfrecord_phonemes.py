@@ -25,7 +25,7 @@ ddsp_prepare_tfrecord \
 --alsologtostderr
 
 """
-
+from absl import logging
 from absl import app
 from absl import flags
 from ddsp.training.data_preparation.prepare_tfrecord_lib_phonemes import prepare_tfrecord
