@@ -79,7 +79,7 @@ def run():
   non_alt_audiopaths=[]
   for path in input_audio_paths:
     if path[-8:-4]!="_alt":
-      non_alt_audiopaths.extend(path)
+      non_alt_audiopaths.append(path)
   logging.info("non_alt_audiopaths '%s'.",non_alt_audiopaths)
   input_audio_paths=non_alt_audiopaths
 
