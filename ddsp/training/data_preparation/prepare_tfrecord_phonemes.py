@@ -74,14 +74,17 @@ def run():
   for filepattern in FLAGS.input_audio_filepatterns:
     input_audio_paths.extend(tf.io.gfile.glob(filepattern))
 
-  input_alternative_audio_paths = []
-  for filepattern_alt in FLAGS.input_alternative_audio_filepatterns:
-    input_alternative_audio_paths.extend(tf.io.gfile.glob(filepattern_alt))
+  #take out the "_alt" ones again
+  non_alt_audiopaths=[]
+  for path in input_audio_paths:
+    if path[-8:-4]!="_alt":
+      non_alt_audiopaths.extend(path)
+
+  input_audio_paths=non_alt_audiopaths
 
 
   prepare_tfrecord(
       input_audio_paths,
-      input_alternative_audio_paths,
       FLAGS.output_tfrecord_path,
       num_shards=FLAGS.num_shards,
       sample_rate=FLAGS.sample_rate,

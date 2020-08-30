@@ -148,8 +148,9 @@ def split_example(
     for window_end in range(window_size, len(sequence) + 1, hop_size):
       yield sequence[window_end-window_size:window_end]
 
-  for audio, loudness_db, f0_hz, f0_confidence, phoneme in zip(
+  for audio, alternative_audio, loudness_db, f0_hz, f0_confidence, phoneme in zip(
       get_windows(ex['audio'], sample_rate),
+      get_windows(ex['alternative_audio'], sample_rate),
       get_windows(ex['loudness_db'], frame_rate),
       get_windows(ex['f0_hz'], frame_rate),
       get_windows(ex['f0_confidence'], frame_rate),
@@ -157,6 +158,7 @@ def split_example(
     beam.metrics.Metrics.counter('prepare-tfrecord', 'split-example').inc()
     yield {
         'audio': audio,
+        'alternative_audio':alternative_audio
         'loudness_db': loudness_db,
         'f0_hz': f0_hz,
         'f0_confidence': f0_confidence,
@@ -189,8 +191,7 @@ def prepare_tfrecord(
   Args:
     input_audio_paths: An iterable of paths to audio files to include in
       TFRecord.
-    input_alternative_audio_paths: An iterable of paths to alternative audio files to include in
-      TFRecord.
+      GM: for each audio path there needs to be an alternative audio path corrsesponding with "_alt" before the file desctiptor
     output_tfrecord_path: The prefix path to the output TFRecord. Shard numbers
       will be added to actual path(s).
     num_shards: The number of shards to use for the TFRecord. If None, this
