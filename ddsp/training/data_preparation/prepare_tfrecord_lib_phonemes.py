@@ -66,7 +66,7 @@ def _load_audio(audio_path, sample_rate):
 
   assert(len(audio)==len(alternative_audio)),"audio and alternative_audio need to be the same length!"
 
-  return {'alternative_audio':alternative_audio,'audio': audio}
+  return {'audio': audio,'alternative_audio':alternative_audio}
 
 
 

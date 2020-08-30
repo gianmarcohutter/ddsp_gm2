@@ -24,6 +24,7 @@ import tensorflow.compat.v2 as tf
 
 tfkl = tf.keras.layers
 
+from absl import logging
 
 # ------------------ Encoders --------------------------------------------------
 class Encoder(tfkl.Layer):
@@ -116,6 +117,12 @@ class MfccTimeDistributedRnnEncoder(Encoder):
     self.dense_out = nn.dense(z_dims)
 
   def compute_z(self, conditioning):
+
+  	#GM deleteme. just for debugging
+  	logging.info("available key values at conditioning:")
+  	for key, value in conditioning.items():
+    	 logging.info(key)	
+
     mfccs = spectral_ops.compute_mfcc(
         conditioning['alternative_audio'],
         lo_hz=20.0,
