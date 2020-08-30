@@ -74,7 +74,7 @@ def run():
   input_audio_paths = []
   for filepattern in FLAGS.input_audio_filepatterns:
     input_audio_paths.extend(tf.io.gfile.glob(filepattern))
-
+  logging.info("input_audio_paths '%s'.",input_audio_paths)
   #take out the "_alt" ones again
   non_alt_audiopaths=[]
   for path in input_audio_paths:
