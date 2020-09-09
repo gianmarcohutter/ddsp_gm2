@@ -1,5 +1,5 @@
 # -*-Python-*-
-# Autoencoder that decodes from (loudness, z).
+# Autoencoder that decodes from (loudness, phoneme, z).
 # z = encoder(audio)
 
 import ddsp
@@ -11,8 +11,8 @@ import ddsp.training
 get_model.model = @models.Autoencoder()
 
 # Preprocessor
-Autoencoder.preprocessor = @preprocessing.DefaultPreprocessor()
-DefaultPreprocessor.time_steps = 1000
+Autoencoder.preprocessor = @preprocessing.PhonemePreprocessor()
+PhonemePreprocessor.time_steps = 1000
 
 # Encoder
 Autoencoder.encoder = @encoders.MfccTimeDistributedRnnEncoder()
@@ -27,7 +27,7 @@ RnnFcDecoder.rnn_channels = 512
 RnnFcDecoder.rnn_type = 'gru'
 RnnFcDecoder.ch = 512
 RnnFcDecoder.layers_per_stack = 3
-RnnFcDecoder.input_keys = ('ld_scaled', 'z')
+RnnFcDecoder.input_keys = ('ld_scaled','z','phoneme')
 RnnFcDecoder.output_splits = (('amps', 1),
                               ('harmonic_distribution', 100),
                               ('noise_magnitudes', 65))
