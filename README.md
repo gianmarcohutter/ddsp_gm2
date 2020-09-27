@@ -2,7 +2,7 @@
 <img src="https://storage.googleapis.com/ddsp/github_images/ddsp_logo.png" width="200px" alt="logo"></img>
 </div>
 
-# DDSP: Differentiable Digital Signal Processing
+# DDSP_gm2
 [![Build Status](https://travis-ci.org/magenta/ddsp.svg?branch=master)](https://travis-ci.org/magenta/ddsp)
 
 [**Demos**](./ddsp/colab/demos)
