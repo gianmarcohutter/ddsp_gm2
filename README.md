@@ -11,12 +11,14 @@ This notebook you downloads any given list of songs from youtube, performs audio
 Contains all necessary steps to set up the environment to train the autoencoder on any unsupervised singing data saved on the connected google drive and save the resulting model to be used 
 
 ## transfer_no_vocoder.ipynb
+When provided with the model (or multiple intermediate model save points) and the audio to be transformed this notebook saves the output of each model save point to the google drive to be compared to each other and evaluate the transformation quality.
 
 ## train_with_vocoder.ipynb
+Same as the train_no_vocoder.ipynb file but takes the "alternative audio" as input to the z-encoder to better generalize the input voices and rid them of the singer specific timbre. Can be used for other purposes as well in case backtranslation would be implemented or other effects added to the voice. The notebook actually clones the repo from the "vocoder" branch, not from the master. 
 
 ## transfer_with_vocoder.ipynb
+Pendant to "transfer_no_vocoder.ipynb" again taking the alternative audio to use the vocoded input. 
 
-## singing_dataset_from_youtube.ipynb
 
 
 
