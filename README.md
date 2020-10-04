@@ -1,6 +1,6 @@
 # DDSP_gm2  
 
-This Library is an adaption of the [DDSP](https://github.com/magenta/ddsp) to work on timbre transfer on singing voices. Check out the "using_vocoder" branch for the latest changes.
+This Library is an adaption of the [DDSP](https://github.com/magenta/ddsp) to work on timbre transfer on singing voices (forked on 18.6.2020). Check out the "using_vocoder" branch for the latest changes.
 The corresponding audio files and some more information about the changes to the ddsp library can be found at the [online supplement](https://n.ethz.ch/~ghutter/webpage/sound.html)
 For training with singing voices we recommend the datasets [from Wilkinson et al.](https://zenodo.org/record/1193957) or the [NUS-48](https://smcnus.comp.nus.edu.sg/nus-48e-sung-and-spoken-lyrics-corpus/)
 
